@@ -1,0 +1,7 @@
+.venv/                                                                                                                                                                            
+  parking.db                                                                                                                                                                        
+  parking_logs.log                                                                                                                                                                  
+  revenue_report_*.csv                                                                                                                                                              
+  __pycache__/
+  *.pyc                                                                                                                                                                             
+  .idea/  
