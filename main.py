@@ -7,7 +7,6 @@ from repository.lot_repository import LotRepository
 from services.vehicle_service import VehicleService
 from services.slot_service import SlotService
 from services.lot_service import LotService
-from view import ParkingView
 from custom_errors.exceptions import SlotNotAvailableError, VehicleNotFoundError, InvalidVehicleTypeError
 
 logging.basicConfig(
@@ -22,6 +21,30 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def select_lot(lot_service):
+    lots = lot_service.get_all_lots()
+    if lots:
+        print("\n===EXISTING LOTS===")
+        for i, lot in enumerate(lots, 1):
+            print(f"{i}. {lot.lot_name}")
+            choice = input("Select lot (or press Enter to create new): ")
+            if choice.isdigit() and 1 <= int(choice) <= len(lots):
+                    return lots[int(choice) - 1]
+    print("\n===CREATE NEW LOT===")
+    try:
+        lot_name = input("Lot name: ")
+        car_rate = float(input("Car rate/hr: "))
+        bike_rate = float(input("Bike rate/hr: "))
+        truck_rate = float(input("Truck rate/hr: "))
+        car_slots = int(input("Car slots: "))
+        bike_slots = int(input("Bike slots: "))
+        truck_slots = int(input("Truck slots: "))
+    except ValueError:
+        print("Invalid input. Please enter integer value.")
+        return select_lot(lot_service)
+    lot = lot_service.create_lot(lot_name, car_rate, bike_rate, truck_rate, car_slots, bike_slots, truck_slots)
+    print(f"Lot {lot.lot_name} created successfully.")
+    return lot
 
 
 def main():
@@ -32,9 +55,8 @@ def main():
       vehicle_service = VehicleService(slot_repo, ticket_repo, lot_repo)
       slot_service = SlotService(slot_repo)
       lot_service = LotService(ticket_repo, lot_repo,slot_repo)
-      view = ParkingView()
 
-      lot = view.select_lot(lot_service)
+      lot = select_lot(lot_service)
       logger.info("Operating on lot %s", lot.lot_name)
 
       while True:
@@ -54,7 +76,12 @@ def main():
               try:
                   vehicle = Vehicle(VehicleType(vehicle_type), vehicle_no)
                   ticket = vehicle_service.park_vehicle(vehicle, lot.lot_id)
-                  view.show_ticket(ticket)
+                  print("===PARKING TICKET===")
+                  print(f"Vehicle No. : {ticket.vehicle.vehicle_no}")
+                  print(f"Slot : {ticket.slot.slot_id}")
+                  print(f"Entry Time : {ticket.entry_time}")
+                  print("====================")
+                  logger.info("Ticket shown for vehicle %s", ticket.vehicle.vehicle_no)
               except InvalidVehicleTypeError as e:
                   print(f"Error: {e}")
               except SlotNotAvailableError as e:
@@ -66,7 +93,15 @@ def main():
               try:
                   vehicle = Vehicle(VehicleType(vehicle_type), vehicle_no)
                   ticket = vehicle_service.remove_vehicle(vehicle)
-                  view.show_bill(ticket)
+                  print("===PARKING BILL===")
+                  print(f"Vehicle No. : {ticket.vehicle.vehicle_no}")
+                  print(f"Slot : {ticket.slot.slot_id}")
+                  print(f"Entry Time : {ticket.entry_time}")
+                  print(f"Duration : {(ticket.exit_time - ticket.entry_time).total_seconds() / 3600}")
+                  print(f"fees : {ticket.fees}")
+                  print("==================")
+                  logger.info("Bill shown for vehicle %s, fees: %.2f", ticket.vehicle.vehicle_no, ticket.fees)
+
               except ValueError:
                   print("Invalid vehicle type. Please enter car, bike or truck.")
               except VehicleNotFoundError as e:
@@ -88,10 +123,20 @@ def main():
           elif choice == "4":
               date = input("Enter date (YYYY-MM-DD): ")
               total, tickets = lot_service.daily_revenue(date, lot.lot_id)
-              view.show_revenue_report(total, tickets, date)
+              print("===DAILY REVENUE REPORT===")
+              print(f"Total Revenue : {total}")
+              for t in tickets:
+                  print(f"  {t.vehicle.vehicle_no} | {t.vehicle.vehicle_type.value} |{t.fees}")
+              print(f"Date : {date}")
+              with open(f"revenue_report_{date}.csv", 'w') as file:
+                  file.write(f"Date: {date}\n")
+                  file.write(f"Total Revenue : {total}\n")
+                  for t in tickets:
+                      file.write(f"{t.vehicle.vehicle_no},{t.vehicle.vehicle_type.value},{t.fees}\n")
+              logger.info("Revenue report generated for %s, total: %.2f", date, total)
 
           elif choice == "5":
-              lot = view.select_lot(lot_service)
+              lot = select_lot(lot_service)
               logger.info("Switched to lot %s", lot.lot_name)
 
           elif choice == "6":
