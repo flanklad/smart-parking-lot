@@ -11,6 +11,7 @@ from view import ParkingView
 from custom_errors.exceptions import SlotNotAvailableError, VehicleNotFoundError, InvalidVehicleTypeError
 
 logging.basicConfig(
+      force=True,
       level=logging.DEBUG,
       format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
       datefmt="%d-%b-%y %H:%M:%S",

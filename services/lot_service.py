@@ -4,7 +4,6 @@ import uuid
 from models.enums import VehicleType
 from models.parking_lot import ParkingLot
 from models.slot import ParkingSlot
-from repository import lot_repository
 from repository.lot_repository import LotRepository
 from repository.ticket_repository import TicketRepository
 from repository.slot_repository import SlotRepository
