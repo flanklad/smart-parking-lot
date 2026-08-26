@@ -9,8 +9,7 @@ from repository.slot_repository import SlotRepository
 from repository.ticket_repository import TicketRepository
 from models.parking_lot import ParkingLot
 from custom_errors.exceptions import SlotNotAvailableError, VehicleNotFoundError
-
-logger = logging.getLogger(__name__)
+from logger_config import logger
 
 
 class VehicleService:
@@ -51,7 +50,7 @@ class VehicleService:
                   raise VehicleNotFoundError("No active ticket found for vehicle")
               ticket.exit_time = datetime.now()
               lot=self.lot_repo.get_lot_by_id(ticket.slot.lot_id)
-              ticket.fees = self._calculate_fee(ticket,lot)
+              ticket.fees = VehicleService.calculate_fee(ticket,lot)
               ticket.slot.current_vehicle = None
               ticket.slot.slot_status = SlotStatus.AVAILABLE
               self.ticket_repo.update_ticket(ticket)
@@ -60,7 +59,8 @@ class VehicleService:
               logger.info("Vehicle %s removed, fees: %.2f", vehicle.vehicle_no, ticket.fees)
               return ticket
 
-      def _calculate_fee(self, ticket: Ticket,lot:ParkingLot) -> float:
+      @staticmethod
+      def calculate_fee(ticket: Ticket,lot:ParkingLot) -> float:
           duration = (ticket.exit_time - ticket.entry_time).total_seconds() / 3600
           rates={
                 VehicleType.CAR: lot.car_rate,
